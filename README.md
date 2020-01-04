@@ -1,0 +1,3 @@
+- `pip install requirements.txt`
+- `python3 dashboard.py`
+- open `localhost:5000` in your browser

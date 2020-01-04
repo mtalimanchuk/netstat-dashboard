@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+
+    <title>Page Title</title>
+  </head>
+  <body>
+    <form>
+      <div class="form-row align-items-center">
+        <div class="col-sm-3 my-1">
+        </div>
+        <div class="col-sm-3 my-1">
+          <label class="sr-only" for="inlineFormInputIpPrefix">Username</label>
+          <div class="input-group">
+            <div class="input-group-prepend">
+              <div class="input-group-text">IP prefix</div>
+            </div>
+            <input type="text" class="form-control" id="inlineFormInputIpPrefix" placeholder="e.g. 127.0">
+            
+          </div>
+        </div>
+      </div>
+    </form>
+
+    <!-- <input type="text" id="ipPrefix" placeholder="IP prefix (will compare against ip.startswith(this_ip_prefix))"> -->
+    <br>
+    <div class="container-flex"><div id="connectionsContainer" class="row"></div></div>
+
+    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+    <script>
+      var ipFilterInput = $("#inlineFormInputIpPrefix");
+      var connectionsContainer = $("#connectionsContainer")
+      var allConnections = [];
+      window.onload = fetchConections();
+      
+      ipFilterInput.on('input', showConnections);
+
+      function fetchConections() {
+        var url = {{ url_for('update')|tojson }};
+        fetch(url, {
+          method: 'POST',
+          // body: JSON.stringify(ipPrefix),
+        })
+        .then(parseJson)
+        .then(updateConnections);
+        setTimeout(fetchConections, 5 * 1000);
+      };
+  
+      function parseJson(response) {
+        r = response.json();
+        // console.log(r);
+        return r
+      };
+  
+      function updateConnections(connections) {
+        allConnections = connections;
+        showConnections();
+      };
+
+      function showConnections() {
+        var ipPrefix = ipFilterInput.val();
+        connectionsContainer.empty();
+        console.log(allConnections);
+        var filteredConnections = allConnections.filter(conn => conn.ip.startsWith(ipPrefix));
+        filteredConnections.forEach(conn => {
+          var colorClass;
+          if (conn.status === "ESTABLISHED") {
+            colorClass = "text-success border-success";
+            colorStyle = "background-color: rgba(40, 167, 69, 0.2);";
+          } else if (conn.status === "TIME_WAIT") {
+            colorClass = "text-secondary border-secondary";
+            colorStyle = "background-color: rgba(108, 117, 125, 0.2);";
+          } else {
+            colorClass = "text-warning border-warning";
+            colorStyle = "background-color: rgba(255, 193, 7, 0.2);";
+          };
+          var divText = conn.ip + ":" + conn.port + " pid:" + conn.pid;
+          if (conn.count > 1) {
+            divText += " (" + conn.count + ")";
+          }
+          $("<div/>", {
+            // id: "connection",
+            "class": "col-3 rounded-sm m-1 " + colorClass,
+            "text": divText,
+            "style": colorStyle,
+          }).appendTo(connectionsContainer);
+        });        
+      }
+    </script>
+  </body>
+</html>
