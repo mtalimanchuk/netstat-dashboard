@@ -6,7 +6,36 @@
 
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
 
-    <title>Page Title</title>
+    <title>Dashboard | netstat</title>
+    <style>
+      body {
+        background-color: black;
+      }
+      .connection-box-established {
+        border: 1px solid rgba(40, 167, 69, 0.2);
+        background-color: rgba(40, 167, 69, 0.1);
+      }
+      .connection-box-established:hover {
+        border-color: rgba(40, 167, 69, 1);
+        background-color: rgba(40, 167, 69, 0.2);
+      }
+      .connection-box-timewait {
+        border: 1px solid rgba(108, 117, 125, 0.2);
+        background-color: rgba(108, 117, 125, 0.1);
+      }
+      .connection-box-timewait:hover {
+        border-color: rgba(108, 117, 125, 1);
+        background-color: rgba(108, 117, 125, 0.2);
+      }
+      .connection-box-unknown {
+        border: 1px solid rgba(255, 193, 7, 0.2);
+        background-color: rgba(255, 193, 7, 0.1);
+      }
+      .connection-box-unknown:hover {
+        border-color: rgba(255, 193, 7, 1);
+        background-color: rgba(255, 193, 7, 0.2);
+      }
+    </style>
   </head>
   <body>
     <form>
@@ -26,7 +55,7 @@
 
     <br>
     <div class="container">
-      <div id="connectionsContainer" class="row justify-content-between">
+      <div id="connectionsContainer" class="row justify-content-center">
         Please wait while the first update occurs...
       </div>
     </div>
@@ -39,7 +68,7 @@
       var connectionsContainer = $("#connectionsContainer")
       var allConnections = [];
       window.onload = fetchConections();
-      
+
       ipFilterInput.on('input', showConnections);
 
       function fetchConections() {
@@ -72,14 +101,11 @@
         filteredConnections.forEach(conn => {
           var colorClass;
           if (conn.status === "ESTABLISHED") {
-            colorClass = "text-success border-success";
-            colorStyle = "background-color: rgba(40, 167, 69, 0.2);";
+            colorClass = "text-success connection-box-established";
           } else if (conn.status === "TIME_WAIT") {
-            colorClass = "text-secondary border-secondary";
-            colorStyle = "background-color: rgba(108, 117, 125, 0.2);";
+            colorClass = "text-secondary connection-box-timewait";
           } else {
-            colorClass = "text-warning border-warning";
-            colorStyle = "background-color: rgba(255, 193, 7, 0.2);";
+            colorClass = "text-warning connection-box-unknown";
           };
           var divText = conn.ip + ":" + conn.port + " pid:" + conn.pid;
           if (conn.count > 1) {
@@ -87,11 +113,17 @@
           }
           $("<div/>", {
             // id: "connection",
-            "class": "col-3 rounded-sm m-1 " + colorClass,
+            "class": "unpinned col-3 m-1 " + colorClass,
             "text": divText,
-            "style": colorStyle,
-          }).appendTo(connectionsContainer);
-        });        
+          })
+          .appendTo(connectionsContainer);
+        });
+        
+        $('.unpinned').hover(function() {
+            $( this ).append($("<span><sup> click to pin</sup></span>"));
+          }, function() {
+            $( this ).find("span").last().remove();
+          });        
       }
     </script>
   </body>
