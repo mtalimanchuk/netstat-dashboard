@@ -53,8 +53,20 @@
       </div>
     </form>
 
+    <form id="pinned-form">
+      <div class="form-row justify-content-center">
+        <div id="pinned" class="col-sm-3 my-1">
+          <input type="text" class="form-control pinned-address-input" id="pinnedAddress0" placeholder="127.0.0.1:22">
+        </div>
+        <input type="button" id="addPinButton" value="+">
+      </div>
+    </form>
+
     <br>
     <div class="container">
+      <div id="pinnedConnectionsContainer" class="row justify-content-center">
+        Please wait while the first update occurs...
+      </div>
       <div id="connectionsContainer" class="row justify-content-center">
         Please wait while the first update occurs...
       </div>
@@ -65,21 +77,32 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
     <script>
       var ipFilterInput = $("#inlineFormInputIpPrefix");
-      var connectionsContainer = $("#connectionsContainer")
+      var pinnedAddressesView = $("#pinned");
+      var addPinButton = $("#addPinButton");
+      var pinnedConnections = [];
+      var pinnedConnectionsContainer = $("#pinnedConnectionsContainer");
       var allConnections = [];
-      window.onload = fetchConections();
+      var connectionsContainer = $("#connectionsContainer");
+      window.onload = fetchConnections();
 
       ipFilterInput.on('input', showConnections);
+      addPinButton.on('click', addPin);
 
-      function fetchConections() {
+      function fetchConnections() {
         var url = {{ url_for('update')|tojson }};
+        var payload = [];
+        $('.pinned-address-input').each(function() {
+          var pinnedIp = $(this).val();
+          payload.push(pinnedIp);
+        });
+        // $.each($(".pinned-address-input"), x => console.log(x.val()));
         fetch(url, {
           method: 'POST',
-          // body: JSON.stringify(ipPrefix),
+          body: JSON.stringify(payload),
         })
         .then(parseJson)
         .then(updateConnections);
-        setTimeout(fetchConections, 5 * 1000);
+        setTimeout(fetchConnections, 5 * 1000);
       };
   
       function parseJson(response) {
@@ -89,14 +112,49 @@
       };
   
       function updateConnections(connections) {
-        allConnections = connections;
+        pinnedConnections = connections[0];
+        allConnections = connections[1];
         showConnections();
+      };
+      
+      function addPin() {
+        var nPinned = pinnedAddressesView.children().length;
+        // var newId = nPinned + 1;
+        $("<input/>", {
+          id: "pinnedAddress" + nPinned,
+          class: "form-control pinned-address-input",
+          type: "text",
+        })
+        .appendTo(pinnedAddressesView);
       };
 
       function showConnections() {
+        console.log(pinnedConnections);
+        console.log(allConnections);
+        pinnedConnectionsContainer.empty();
+        pinnedConnections.forEach(conn => {
+          var colorClass;
+          if (conn.status === "ESTABLISHED") {
+            colorClass = "text-success connection-box-established";
+          } else if (conn.status === "TIME_WAIT") {
+            colorClass = "text-secondary connection-box-timewait";
+          } else {
+            colorClass = "text-warning connection-box-unknown";
+          };
+          var divText = conn.ip + ":" + conn.port + " pid:" + conn.process_id + " since " + conn.first_seen;
+          // if (conn.count > 1) {
+          //   divText += " (" + conn.count + ")";
+          // }
+          $("<div/>", {
+            // id: "connection",
+            "class": "col-3 m-1 " + colorClass,
+            "text": divText,
+          })
+          .appendTo(pinnedConnectionsContainer);
+        });
+
         var ipPrefix = ipFilterInput.val();
         connectionsContainer.empty();
-        console.log(allConnections);
         var filteredConnections = allConnections.filter(conn => conn.ip.startsWith(ipPrefix));
         filteredConnections.forEach(conn => {
           var colorClass;
@@ -107,10 +165,10 @@
           } else {
             colorClass = "text-warning connection-box-unknown";
           };
-          var divText = conn.ip + ":" + conn.port + " pid:" + conn.pid;
-          if (conn.count > 1) {
-            divText += " (" + conn.count + ")";
-          }
+          var divText = conn.ip + ":" + conn.port + " pid:" + conn.process_id;
+          // if (conn.count > 1) {
+          //   divText += " (" + conn.count + ")";
+          // }
           $("<div/>", {
             // id: "connection",
             "class": "unpinned col-3 m-1 " + colorClass,
